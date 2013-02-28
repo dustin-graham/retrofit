@@ -9,7 +9,6 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
@@ -17,22 +16,16 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.AbstractHttpEntity;
-import org.apache.http.entity.mime.MIME;
-import org.apache.http.entity.mime.MultipartEntity;
-import org.apache.http.entity.mime.content.AbstractContentBody;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicHeader;
+import org.apache.http.protocol.HTTP;
 import org.apache.http.util.EntityUtils;
 import retrofit.http.Header;
 import retrofit.http.mime.TypedByteArray;
 import retrofit.http.mime.TypedOutput;
 
-import static org.apache.http.entity.mime.HttpMultipartMode.BROWSER_COMPATIBLE;
-
 /** A {@link Client} which uses an implementation of Apache's {@link HttpClient}. */
 public class ApacheClient implements Client {
-  private static final String HEADER_CONTENT_TYPE = "Content-Type";
-
   private final HttpClient client;
 
   /** Creates an instance backed by {@link DefaultHttpClient}. */
@@ -74,11 +67,11 @@ public class ApacheClient implements Client {
     String reason = statusLine.getReasonPhrase();
 
     List<Header> headers = new ArrayList<Header>();
-    String contentType = "application/octet-stream";
+    String contentType = HTTP.OCTET_STREAM_TYPE;
     for (org.apache.http.Header header : response.getAllHeaders()) {
       String name = header.getName();
       String value = header.getValue();
-      if (name.equalsIgnoreCase(HEADER_CONTENT_TYPE)) {
+      if (name.equalsIgnoreCase(HTTP.CONTENT_TYPE)) {
         contentType = value;
       }
       headers.add(new Header(name, value));
@@ -108,20 +101,9 @@ public class ApacheClient implements Client {
       }
 
       // Add the content body, if any.
-      if (!request.isMultipart()) {
-        TypedOutput body = request.getBody();
-        if (body != null) {
-          setEntity(new TypedOutputEntity(body));
-        }
-      } else {
-        Map<String, TypedOutput> bodyParameters = request.getBodyParameters();
-        if (bodyParameters != null && !bodyParameters.isEmpty()) {
-          MultipartEntity entity = new MultipartEntity(BROWSER_COMPATIBLE);
-          for (Map.Entry<String, TypedOutput> entry : bodyParameters.entrySet()) {
-            entity.addPart(entry.getKey(), new TypedOutputBody(entry.getValue()));
-          }
-          setEntity(entity);
-        }
+      TypedOutput body = request.getBody();
+      if (body != null) {
+        setEntity(new TypedOutputEntity(body));
       }
     }
 
@@ -130,45 +112,9 @@ public class ApacheClient implements Client {
     }
   }
 
-  /** Adapts {@link org.apache.http.entity.mime.content.ContentBody} to {@link TypedOutput}. */
-  private static class TypedOutputBody extends AbstractContentBody {
-    private final TypedOutput typedBytes;
-
-    TypedOutputBody(TypedOutput typedBytes) {
-      super(typedBytes.mimeType());
-      this.typedBytes = typedBytes;
-    }
-
-    @Override public long getContentLength() {
-      return typedBytes.length();
-    }
-
-    @Override public String getFilename() {
-      return null;
-    }
-
-    @Override public String getCharset() {
-      return null;
-    }
-
-    @Override public String getTransferEncoding() {
-      return MIME.ENC_BINARY;
-    }
-
-    @Override public void writeTo(OutputStream out) throws IOException {
-      // Note: We probably want to differentiate I/O errors that occur while reading a file from
-      // network errors. Network operations can be retried. File operations will probably continue
-      // to fail.
-      //
-      // In the case of photo uploads, we at least check that the file exists before we even try to
-      // upload it.
-      typedBytes.writeTo(out);
-    }
-  }
-
   /** Container class for passing an entire {@link TypedOutput} as an {@link HttpEntity}. */
   static class TypedOutputEntity extends AbstractHttpEntity {
-    private final TypedOutput typedOutput;
+    final TypedOutput typedOutput;
 
     TypedOutputEntity(TypedOutput typedOutput) {
       this.typedOutput = typedOutput;

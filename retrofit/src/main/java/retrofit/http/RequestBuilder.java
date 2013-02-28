@@ -4,10 +4,8 @@ package retrofit.http;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import retrofit.http.client.Request;
 import retrofit.http.mime.TypedOutput;
@@ -90,12 +88,7 @@ final class RequestBuilder {
         }
       }
       if (found != null) {
-        String value;
-        try {
-          value = URLEncoder.encode(String.valueOf(found.getValue()), UTF_8);
-        } catch (UnsupportedEncodingException e) {
-          throw new AssertionError(e);
-        }
+        String value = getUrlEncodedValue(found);
         replacedPath = replacedPath.replace("{" + found.getName() + "}", value);
         paramList.remove(found);
       } else {
@@ -125,15 +118,16 @@ final class RequestBuilder {
     }
 
     TypedOutput body = null;
-    Map<String, TypedOutput> bodyParams = new LinkedHashMap<String, TypedOutput>();
     if (!methodInfo.restMethod.hasBody()) {
       for (int i = 0, count = paramList.size(); i < count; i++) {
         url.append((i == 0) ? '?' : '&');
         Parameter nonPathParam = paramList.get(i);
-        url.append(nonPathParam.getName()).append("=").append(nonPathParam.getValue());
+        String value = getUrlEncodedValue(nonPathParam);
+        url.append(nonPathParam.getName()).append("=").append(value);
       }
     } else if (!paramList.isEmpty()) {
       if (methodInfo.isMultipart) {
+        MultipartTypedOutput multipartBody = new MultipartTypedOutput();
         for (Parameter parameter : paramList) {
           Object value = parameter.getValue();
           TypedOutput typedOutput;
@@ -142,8 +136,9 @@ final class RequestBuilder {
           } else {
             typedOutput = new TypedString(value.toString());
           }
-          bodyParams.put(parameter.getName(), typedOutput);
+          multipartBody.addPart(parameter.getName(), typedOutput);
         }
+        body = multipartBody;
       } else {
         body = converter.toBody(paramList);
       }
@@ -156,7 +151,14 @@ final class RequestBuilder {
       }
     }
 
-    return new Request(methodInfo.restMethod.value(), url.toString(), headers,
-        methodInfo.isMultipart, body, bodyParams);
+    return new Request(methodInfo.restMethod.value(), url.toString(), headers, body);
+  }
+
+  private static String getUrlEncodedValue(Parameter found) {
+    try {
+      return URLEncoder.encode(String.valueOf(found.getValue()), UTF_8);
+    } catch (UnsupportedEncodingException e) {
+      throw new AssertionError(e);
+    }
   }
 }
