@@ -8,13 +8,11 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.http.protocol.HTTP;
 import retrofit.http.Profiler.RequestInformation;
 import retrofit.http.client.Client;
 import retrofit.http.client.Request;
@@ -35,7 +33,6 @@ public class RestAdapter {
   private static final Logger LOGGER = Logger.getLogger(RestAdapter.class.getName());
   private static final int LOG_CHUNK_SIZE = 4000;
   static final String THREAD_PREFIX = "Retrofit-";
-  static final String UTF_8 = "UTF-8";
 
   private final Server server;
   private final Client.Provider clientProvider;
@@ -58,11 +55,11 @@ public class RestAdapter {
 
   /**
    * Adapts a Java interface to a REST API.
-   * <p/>
+   * <p>
    * The relative path for a given method is obtained from an annotation on the method describing
    * the request type. The names of URL parameters are retrieved from {@link Name}
    * annotations on the method parameters.
-   * <p/>
+   * <p>
    * HTTP requests happen in one of two ways:
    * <ul>
    * <li>On the provided HTTP {@link Executor} with callbacks marshaled to the callback
@@ -74,7 +71,7 @@ public class RestAdapter {
    * response will be converted to the method's return type using the specified
    * {@link Converter}.</li>
    * </ul>
-   * <p/>
+   * <p>
    * For example:
    * <pre>
    *   public interface MyApi {
@@ -128,8 +125,8 @@ public class RestAdapter {
       }
       Callback<?> callback = (Callback<?>) args[args.length - 1];
       httpExecutor.execute(new CallbackRunnable(callback, callbackExecutor) {
-        @Override public Object obtainResponse() {
-          return invokeRequest(methodDetails, args);
+        @Override public ResponseWrapper obtainResponse() {
+          return (ResponseWrapper) invokeRequest(methodDetails, args);
         }
       });
       return null; // Asynchronous methods should have return type of void.
@@ -184,24 +181,23 @@ public class RestAdapter {
           body = logResponse(url, response.getStatus(), body, elapsedTime);
         }
 
-        List<Header> headers = response.getHeaders();
-        for (Header header : headers) {
-          if (HTTP.CONTENT_TYPE.equalsIgnoreCase(header.getName()) //
-              && !UTF_8.equalsIgnoreCase(Utils.parseCharset(header.getValue()))) {
-            throw new IOException("Only UTF-8 charset supported.");
-          }
-        }
-
         Type type = methodDetails.type;
         if (statusCode >= 200 && statusCode < 300) { // 2XX == successful request
           if (type.equals(Response.class)) {
-            return response;
+            if (methodDetails.isSynchronous) {
+              return response;
+            }
+            return new ResponseWrapper(response, response);
           }
           if (body == null) {
             return null;
           }
           try {
-            return converter.fromBody(body, type);
+            Object convert = converter.fromBody(body, type);
+            if (methodDetails.isSynchronous) {
+              return convert;
+            }
+            return new ResponseWrapper(response, convert);
           } catch (ConversionException e) {
             throw RetrofitError.conversionError(url, response, converter, type, e);
           }
@@ -231,7 +227,8 @@ public class RestAdapter {
     LOGGER.fine("<--- HTTP " + statusCode + " " + url + " (" + elapsedTime + "ms)");
 
     byte[] bodyBytes = Utils.streamToBytes(body.in());
-    String bodyString = new String(bodyBytes, UTF_8);
+    String bodyCharset = Utils.parseCharset(body.mimeType());
+    String bodyString = new String(bodyBytes, bodyCharset);
     for (int i = 0; i < bodyString.length(); i += LOG_CHUNK_SIZE) {
       int end = Math.min(bodyString.length(), i + LOG_CHUNK_SIZE);
       LOGGER.fine(bodyString.substring(i, end));
@@ -260,13 +257,14 @@ public class RestAdapter {
 
   /**
    * Build a new {@link RestAdapter}.
-   * <p/>
+   * <p>
    * Calling the following methods is required before calling {@link #build()}:
    * <ul>
    * <li>{@link #setServer(Server)}</li>
    * <li>{@link #setClient(Client.Provider)}</li>
    * <li>{@link #setConverter(Converter)}</li>
    * </ul>
+   * <p>
    * If you are using asynchronous execution (i.e., with {@link Callback Callbacks}) the following
    * is also required:
    * <ul>
