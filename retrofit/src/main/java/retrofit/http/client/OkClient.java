@@ -13,18 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package retrofit.http;
+package retrofit.http.client;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import com.squareup.okhttp.OkHttpClient;
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+/** Retrofit client that uses OkHttp for communication. */
+public class OkClient extends UrlConnectionClient {
+  private final OkHttpClient client;
 
-/** Make a DELETE request to a REST path relative to base URL. */
-@Target(METHOD)
-@Retention(RUNTIME)
-@RestMethod("DELETE")
-public @interface DELETE {
-  String value();
+  public OkClient() {
+    this(new OkHttpClient());
+  }
+
+  public OkClient(OkHttpClient client) {
+    this.client = client;
+  }
+
+  @Override protected HttpURLConnection openConnection(Request request) throws IOException {
+    return client.open(new URL(request.getUrl()));
+  }
 }

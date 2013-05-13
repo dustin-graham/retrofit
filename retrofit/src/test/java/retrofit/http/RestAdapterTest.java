@@ -8,6 +8,7 @@ import java.util.concurrent.Executor;
 import org.junit.Before;
 import org.junit.Test;
 import retrofit.http.client.Client;
+import retrofit.http.client.Header;
 import retrofit.http.client.Request;
 import retrofit.http.client.Response;
 import retrofit.http.mime.TypedString;
@@ -111,7 +112,7 @@ public class RestAdapterTest {
     } catch (RetrofitError e) {
       assertThat(e.getResponse().getStatus()).isEqualTo(200);
       assertThat(e.getCause()).isInstanceOf(ConversionException.class);
-      assertThat(e.getResponse().getBody()).isEqualTo(new TypedString("{"));
+      assertThat(e.getResponse().getBody()).isNull();
     }
   }
 

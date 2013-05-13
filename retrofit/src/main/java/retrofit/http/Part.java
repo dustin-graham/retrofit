@@ -18,13 +18,30 @@ package retrofit.http;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/** Make a DELETE request to a REST path relative to base URL. */
-@Target(METHOD)
-@Retention(RUNTIME)
-@RestMethod("DELETE")
-public @interface DELETE {
+/**
+ * Denotes a single part of a mutli-part request.
+ * <p>
+ * The parameter type on which this annotation exists will be processed in one of two ways:
+ * <ul>
+ * <li>If the type implements {@link retrofit.http.mime.TypedOutput TypedOutput} the headers and
+ * body will be used directly.</li>
+ * <li>Other object types will be converted to an appropriate representation by calling {@link
+ * Converter#toBody(Object)}.</li>
+ * </ul>
+ * <p>
+ * <pre>
+ * &#64;Multipart
+ * &#64;POST("/")
+ * void example(&#64;Part("description") TypedString description,
+ *              &#64;Part("image") TypedFile image,
+ *              ...
+ * );
+ * </pre>
+ */
+@Target(PARAMETER) @Retention(RUNTIME)
+public @interface Part {
   String value();
 }

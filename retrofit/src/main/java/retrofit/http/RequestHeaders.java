@@ -15,16 +15,22 @@
  */
 package retrofit.http;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import java.util.Collections;
+import java.util.List;
+import retrofit.http.client.Header;
 
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+/** Manages headers for each request. */
+public interface RequestHeaders {
+  /**
+   * Get a list of headers for a request. This method will be called once for each request allowing
+   * you to change the list as the state of your application changes.
+   */
+  List<retrofit.http.client.Header> get();
 
-/** Make a DELETE request to a REST path relative to base URL. */
-@Target(METHOD)
-@Retention(RUNTIME)
-@RestMethod("DELETE")
-public @interface DELETE {
-  String value();
+  /** Empty header list. */
+  RequestHeaders NONE = new RequestHeaders() {
+    @Override public List<Header> get() {
+      return Collections.emptyList();
+    }
+  };
 }

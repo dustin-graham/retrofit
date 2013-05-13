@@ -18,13 +18,20 @@ package retrofit.http;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/** Make a DELETE request to a REST path relative to base URL. */
-@Target(METHOD)
-@Retention(RUNTIME)
-@RestMethod("DELETE")
-public @interface DELETE {
+/**
+ * Named pair for a form-encoded request.
+ *
+ * <pre>
+ * &#64;FormUrlEncoded
+ * &#64;POST("/")
+ * void example(@Field("name") String name, @Field("occupation") String occupation, ..);
+ * }
+ * </pre>
+ */
+@Target(PARAMETER) @Retention(RUNTIME)
+public @interface Field {
   String value();
 }

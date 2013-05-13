@@ -18,13 +18,19 @@ package retrofit.http;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/** Make a DELETE request to a REST path relative to base URL. */
-@Target(METHOD)
-@Retention(RUNTIME)
-@RestMethod("DELETE")
-public @interface DELETE {
+/**
+ * Named replacement in the URL path. Values are converted to string using
+ * {@link String#valueOf(Object)}.
+ * <p>
+ * <pre>
+ * &#64;GET("/image/{id}")
+ * void example(@Path("id") int id, ..);
+ * </pre>
+ */
+@Retention(RUNTIME) @Target(PARAMETER)
+public @interface Path {
   String value();
 }

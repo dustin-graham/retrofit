@@ -1,4 +1,18 @@
-// Copyright 2012 Square, Inc.
+/*
+ * Copyright (C) 2012 Square, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package retrofit.http;
 
 import java.io.IOException;
@@ -7,21 +21,21 @@ import retrofit.http.client.Response;
 import retrofit.http.mime.TypedInput;
 
 public class RetrofitError extends RuntimeException {
-  static RetrofitError networkError(String url, IOException exception) {
+  public static RetrofitError networkError(String url, IOException exception) {
     return new RetrofitError(url, null, null, null, true, exception);
   }
 
-  static RetrofitError conversionError(String url, Response response, Converter converter,
+  public static RetrofitError conversionError(String url, Response response, Converter converter,
       Type successType, ConversionException exception) {
     return new RetrofitError(url, response, converter, successType, false, exception);
   }
 
-  static RetrofitError httpError(String url, Response response, Converter converter,
+  public static RetrofitError httpError(String url, Response response, Converter converter,
       Type successType) {
     return new RetrofitError(url, response, converter, successType, false, null);
   }
 
-  static RetrofitError unexpectedError(String url, Throwable exception) {
+  public static RetrofitError unexpectedError(String url, Throwable exception) {
     return new RetrofitError(url, null, null, null, false, exception);
   }
 

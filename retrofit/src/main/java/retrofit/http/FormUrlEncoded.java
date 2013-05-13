@@ -21,10 +21,14 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-/** Make a DELETE request to a REST path relative to base URL. */
-@Target(METHOD)
-@Retention(RUNTIME)
-@RestMethod("DELETE")
-public @interface DELETE {
-  String value();
+/**
+ * Denotes that the request body will use form URL encoding. Fields should be declared as
+ * parameters and annotated with {@link Field @Field}.
+ * <p>
+ * Requests made with this annotation will have {@code application/x-www-form-urlencoded} MIME
+ * type. Field names and values will be UTF-8 encoded before being URI-encoded in accordance to
+ * <a href="http://tools.ietf.org/html/rfc3986">RFC-3986</a>.
+ */
+@Target(METHOD) @Retention(RUNTIME)
+public @interface FormUrlEncoded {
 }
